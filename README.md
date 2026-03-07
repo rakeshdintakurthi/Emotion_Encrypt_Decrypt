@@ -3,7 +3,7 @@
 > "Where feelings stay readable, but words stay private"
 
 ## 🎥 Live Demo Video (Hackathon Submission)
-**[Link to your Loom/Demo Video Here]** *(Mandatory: Replace this with the URL to your working project video)*
+DEMO VIDEO LINK:https://drive.google.com/file/d/1pADfiWbla-fvxoPGwd3fDoELIx4C79Pk/view?usp=sharing
 
 Emotion Cipher is an AI-powered emotion-aware encryption system. It allows users to encrypt private messages using AES while visually preserving the core emotional context (Joy, Sadness, Anger, Fear, Anxiety, Excitement, Love, Neutral) so the overall tone isn't lost in translation.
 
