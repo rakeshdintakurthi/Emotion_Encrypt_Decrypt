@@ -1,96 +1,100 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Header } from './components/Header';
+import { TopNav } from './components/TopNav';
 import { EncryptPanel } from './components/EncryptPanel';
 import { DecryptPanel } from './components/DecryptPanel';
-import { Sidebar } from './components/Sidebar';
+import { Dashboard } from './components/Dashboard';
 
 function App() {
   const [activeTab, setActiveTab] = useState('encrypt');
-  const [apiKey, setApiKey] = useState('AIzaSyBw-uxcklxuhS_66j40Sw_n8YdYhfw8ZeM');
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || '');
   const [history, setHistory] = useState([]);
 
   const handleEncrypt = (newResult) => {
-    setHistory(prev => [newResult, ...prev].slice(0, 5));
+    setHistory(prev => [newResult, ...prev].slice(0, 20));
   };
 
   return (
-    <div className="min-h-screen py-10 px-4 md:px-8 relative z-10">
-      <div className="max-w-7xl mx-auto flex flex-col items-center">
+    <div className="min-h-screen bg-background text-white font-sans relative overflow-x-hidden">
+      {/* Ambient background blobs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="bg-blob w-96 h-96 bg-primary/30" style={{ top: '-5%', left: '-10%' }} />
+        <div className="bg-blob w-72 h-72 bg-purple-600/20" style={{ top: '50%', right: '-5%' }} />
+        <div className="bg-blob w-64 h-64 bg-accent/10" style={{ bottom: '10%', left: '30%' }} />
+        <div className="bg-grid-white absolute inset-0 opacity-100" />
+      </div>
 
-        <Header setApiKey={setApiKey} currentApiKey={apiKey} />
+      <TopNav currentApiKey={apiKey} setApiKey={setApiKey} />
 
-        {/* Floating Particles in Background handled via CSS & abstract JS is overkill here, relying on CSS animations for performance */}
+      {/* Main content */}
+      <main className="relative z-10 pt-28 pb-12 px-4 md:px-8 lg:px-12 max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
 
-        <div className="w-full flex flex-col lg:flex-row gap-8 items-start justify-center">
-
-          <div className="flex-1 w-full max-w-3xl flex flex-col items-center">
-
-            {/* Mode Toggle Switch */}
-            <div className="glass-card p-2 rounded-full mb-8 inline-flex items-center gap-2 relative bg-black/40 border border-white/10">
-              <motion.div
-                layoutId="activeTabGlow"
-                className="absolute inset-0 top-2 bottom-2 w-[calc(50%-4px)] rounded-full bg-gradient-to-r from-blue-600/30 to-purple-600/30 blur-md pointer-events-none transition-all duration-300 left-2"
-                style={{
-                  transform: activeTab === 'decrypt' ? 'translateX(100%)' : 'translateX(0%)'
-                }}
-              />
-              <button
-                onClick={() => setActiveTab('encrypt')}
-                className={`relative z-10 px-8 py-3 rounded-full font-bold transition-all duration-300 uppercase tracking-wider text-sm ${activeTab === 'encrypt' ? 'text-white' : 'text-gray-400 hover:text-white/80'}`}
-              >
-                {activeTab === 'encrypt' && (
-                  <motion.div layoutId="activeTabBg" className="absolute inset-0 bg-white/10 border border-white/20 rounded-full" />
-                )}
-                Encrypt
-              </button>
-
-              <button
-                onClick={() => setActiveTab('decrypt')}
-                className={`relative z-10 px-8 py-3 rounded-full font-bold transition-all duration-300 uppercase tracking-wider text-sm ${activeTab === 'decrypt' ? 'text-white' : 'text-gray-400 hover:text-white/80'}`}
-              >
-                {activeTab === 'decrypt' && (
-                  <motion.div layoutId="activeTabBg" className="absolute inset-0 bg-white/10 border border-white/20 rounded-full" />
-                )}
-                Decrypt
-              </button>
+          {/* LEFT: Interaction */}
+          <div className="flex flex-col gap-0">
+            {/* Page Header */}
+            <div className="mb-6">
+              <h2 className="font-display font-bold text-3xl text-white tracking-tight leading-tight mb-1">
+                Secure Message Vault
+              </h2>
+              <p className="text-gray-400 text-sm">
+                End-to-end encrypted messages powered by AI emotion analysis.
+              </p>
             </div>
 
-            {/* Main Content Area */}
-            <div className="w-full relative min-h-[500px]">
-              <AnimatePresence mode="wait">
-                {activeTab === 'encrypt' ? (
-                  <motion.div
-                    key="encrypt"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0 w-full"
-                  >
-                    <EncryptPanel apiKey={apiKey} onEncrypt={handleEncrypt} />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="decrypt"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0 w-full"
-                  >
-                    <DecryptPanel />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            {/* Tab toggle */}
+            <div className="flex gap-1 p-1 bg-white/5 border border-white/5 rounded-xl mb-4 w-fit">
+              {['encrypt', 'decrypt'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`relative px-6 py-2 rounded-lg font-semibold text-sm tracking-wide capitalize transition-all duration-200 ${activeTab === tab ? 'text-white' : 'text-gray-500 hover:text-gray-300'
+                    }`}
+                >
+                  {activeTab === tab && (
+                    <motion.div
+                      layoutId="tabIndicator"
+                      className="absolute inset-0 bg-white/10 border border-white/10 rounded-lg"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                    />
+                  )}
+                  <span className="relative z-10">{tab}</span>
+                </button>
+              ))}
             </div>
 
+            {/* Content panels */}
+            <AnimatePresence mode="wait">
+              {activeTab === 'encrypt' ? (
+                <motion.div
+                  key="encrypt"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <EncryptPanel apiKey={apiKey} onEncrypt={handleEncrypt} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="decrypt"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <DecryptPanel />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          <Sidebar history={history} />
-
+          {/* RIGHT: Dashboard */}
+          <aside className="hidden lg:block">
+            <Dashboard history={history} />
+          </aside>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

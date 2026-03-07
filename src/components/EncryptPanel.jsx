@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles, Copy, CheckCircle, Shield } from 'lucide-react';
+import { Sparkles, Copy, CheckCircle, Shield, AlertTriangle } from 'lucide-react';
 import { EmotionBadge, EMOTION_STYLES } from './EmotionBadge';
 import { detectEmotion } from '../utils/api';
 import { encryptText } from '../utils/encryption';
+import { StrengthMeter } from './StrengthMeter';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function EncryptPanel({ apiKey, onEncrypt }) {
@@ -13,38 +14,29 @@ export function EncryptPanel({ apiKey, onEncrypt }) {
   const [error, setError] = useState(null);
 
   const dominantEmotion = result?.dominant || 'Neutral';
-  const glowColor = EMOTION_STYLES[dominantEmotion]?.color || '#888888';
+  const glowColor = EMOTION_STYLES[dominantEmotion]?.color || '#6366f1';
 
   const handleEncrypt = async () => {
     if (!inputText.trim()) {
-      setError("Please enter a message to encrypt.");
+      setError('Please enter a message to encrypt.');
       return;
     }
-
     if (!apiKey) {
-      setError("Please add your Claude API key in the settings first.");
+      setError('Please add your API key in the settings first.');
       return;
     }
-
     setIsAnalyzing(true);
     setError(null);
     setResult(null);
-
     try {
       const emotionData = await detectEmotion(inputText, apiKey);
       const encryptedStr = encryptText(inputText, emotionData.emotions || ['Neutral']);
-
-      const newResult = {
-        originalText: inputText,
-        ...emotionData,
-        cipherText: encryptedStr
-      };
-
+      const newResult = { originalText: inputText, ...emotionData, cipherText: encryptedStr };
       setResult(newResult);
       onEncrypt({ id: Date.now(), ...newResult });
     } catch (err) {
-      console.error("Encryption Process Error:", err);
-      setError(err?.message || "An unknown error occurred during analysis.");
+      console.error('Encryption Error:', err);
+      setError(err?.message || 'An unknown error occurred.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -59,108 +51,113 @@ export function EncryptPanel({ apiKey, onEncrypt }) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="glass-card p-6 flex flex-col gap-6 w-full max-w-2xl mx-auto"
-    >
-      <div>
-        <label className="block text-sm font-semibold tracking-wide text-gray-300 mb-3 uppercase">
+    <div className="glass-card p-6 flex flex-col gap-5">
+
+      {/* Textarea */}
+      <div className="relative">
+        <label className="block text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
           Secret Message
         </label>
         <div
-          className="relative transition-all duration-500 rounded-xl"
-          style={{ boxShadow: result ? `0 0 20px ${glowColor}30` : 'none' }}
+          className="relative rounded-xl transition-all duration-500"
+          style={{ boxShadow: result ? `0 0 0 1px ${glowColor}40, 0 0 20px ${glowColor}15` : 'none' }}
         >
           <textarea
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Type a message to hide... (e.g., I'm so excited about the new project!)"
-            className="w-full h-32 p-4 glass-input text-white resize-none"
-            style={{
-              borderColor: result ? `${glowColor}50` : 'rgba(255,255,255,0.1)',
+            onChange={(e) => {
+              setInputText(e.target.value);
+              if (error) setError(null);
             }}
+            placeholder="Type a message to encrypt and analyze emotions..."
+            className="w-full h-36 p-4 bg-black/40 border border-white/10 rounded-xl focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 text-white resize-none text-sm leading-relaxed transition-all duration-300 placeholder-gray-600"
           />
-          {result && (
-            <div className="absolute top-0 left-0 w-1 h-full rounded-l-xl transition-all duration-500" style={{ backgroundColor: glowColor }} />
-          )}
+          {/* Live char count */}
+          <span className="absolute bottom-3 right-3 text-xs text-gray-600">
+            {inputText.length} chars
+          </span>
         </div>
       </div>
 
+      {/* Strength meter (live) */}
+      <StrengthMeter text={inputText} emotions={result?.emotions} />
+
+      {/* Error */}
       <AnimatePresence>
         {error && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="text-red-400 text-sm bg-red-900/20 p-3 rounded-lg border border-red-500/20 flex items-center gap-2"
+            className="flex items-center gap-2.5 text-sm text-red-400 bg-red-900/10 px-4 py-3 rounded-xl border border-red-500/20"
           >
-            <Shield className="w-4 h-4" />
-            {error}
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* CTA Button */}
       <button
         onClick={handleEncrypt}
         disabled={isAnalyzing}
-        className="btn-primary py-4 flex items-center justify-center gap-2 w-full relative overflow-hidden group"
+        className="btn-primary py-4 flex items-center justify-center gap-2.5 w-full text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] animate-[shimmer_2s_infinite] group-hover:animate-[shimmer_1s_infinite]" />
-
+        {/* Shimmer overlay */}
+        {!isAnalyzing && (
+          <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+        )}
         {isAnalyzing ? (
           <>
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
-              <Sparkles className="w-5 h-5 text-white/70" />
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            >
+              <Sparkles className="w-4 h-4" />
             </motion.div>
-            <span>Analyzing Emotions...</span>
+            <span>Analyzing emotions...</span>
           </>
         ) : (
           <>
-            <Shield className="w-5 h-5" />
+            <Shield className="w-4 h-4" />
             <span>Encrypt & Analyze</span>
           </>
         )}
       </button>
 
+      {/* Result */}
       <AnimatePresence>
         {result && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mt-4 p-5 rounded-xl bg-black/60 border border-white/10 relative overflow-hidden"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-2 flex flex-col gap-4"
           >
-            <div className="flex flex-wrap gap-2 mb-6">
+            {/* Emotion badges */}
+            <div className="flex flex-wrap gap-2">
               {result.emotions.map((emp, idx) => (
-                <EmotionBadge
-                  key={idx}
-                  emotion={emp}
-                  confidence={result.confidence?.[emp]}
-                  index={idx}
-                />
+                <EmotionBadge key={idx} emotion={emp} confidence={result.confidence?.[emp]} index={idx} />
               ))}
             </div>
 
+            {/* Cipher output */}
             <div className="relative group">
-              <label className="text-xs uppercase tracking-wider text-gray-500 mb-2 block">
-                Encrypted Cipher String
+              <label className="text-xs uppercase tracking-widest text-gray-500 mb-2 block font-semibold">
+                Encrypted Output
               </label>
-              <div className="font-mono text-sm text-green-400 bg-black/80 p-4 rounded-lg border border-green-500/20 break-all pr-12">
+              <div className="font-mono text-xs text-emerald-400 bg-black/60 p-4 rounded-xl border border-emerald-500/20 break-all pr-12 leading-relaxed">
                 {result.cipherText}
               </div>
-
               <button
                 onClick={handleCopy}
-                className="absolute right-2 top-8 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
-                title="Copy to clipboard"
+                className="absolute right-3 top-9 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-gray-400 hover:text-white border border-white/10"
+                title="Copy"
               >
-                {copied ? <CheckCircle className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+                {copied ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div >
+    </div>
   );
 }
